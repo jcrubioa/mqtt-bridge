@@ -18,6 +18,7 @@ CREATE TABLE `metric`
 	metric_value DOUBLE,
 	FOREIGN KEY fk_measure(measure_id)
 	REFERENCES measure(measure_id)
+    ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 

@@ -5,6 +5,7 @@ import uuid
 import random
 import paho.mqtt.client as mqtt #import the client1
 
+#broker_address="35.211.233.243"
 broker_address="localhost"
 
 import random
@@ -34,17 +35,18 @@ print("creating new instance")
 client = mqtt.Client("P2") #create new instance
 client.connect(broker_address)
 ts = time.time()
-points = [
+"""points = [
 	(5.217041, -73.542104, "Río Bogotá Nacedero", "1"),
 	(5.150290, -73.690503, "Río Bogotá Chocontá", "2"),
 	(4.750229, -74.127806, "Río Bogotá Siberia", "3"),
 	(-1.418765, -70.587582, "Río Caquetá Zona Media", "4")
-]
+]"""
+points = [(4.6355555555556, -74.082777777778, "Punto de Prueba", "5")]
 
 while True:
 	print("Creating new data point...")
 	#timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-	timestamp = randomDate('2019-06-01 00:00', '2019-06-17 12:00', random.random())
+	timestamp = randomDate('2019-05-30 00:00', '2019-05-31 12:00', random.random())
 	event_uuid = str(uuid.uuid4())
 
 	point = random.choice(points)
@@ -62,8 +64,12 @@ while True:
 				'value': random.uniform(2, 35)
 			},
 			{
-				'name': 'turbidity',
-				'value': random.uniform(0, 1)
+				'name': 'ph',
+				'value': random.uniform(7, 7.5)
+			},
+			{
+				'name': 'level',
+				'value': random.uniform(100, 300)
 			}
 		]
 	}
@@ -71,3 +77,4 @@ while True:
 	print("Payload: {}".format(json.dumps(payload)))
 	print("Publishing message to topic", "sensor_data")
 	client.publish("sensor_data", json.dumps(payload))
+	time.sleep(10)
