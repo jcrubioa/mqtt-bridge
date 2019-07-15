@@ -9,6 +9,7 @@ import sqlite3
 import requests
 from sqlite3 import Error
 
+states = {}
 
 def on_message(client, userdata, message):
   payload = str(message.payload.decode("utf-8"))
@@ -20,7 +21,7 @@ def on_message(client, userdata, message):
   write_to_db(payload)
   check_rules(payload)
 
-def send_mail(rule, send_to, point_name):
+def send_mail(rule, send_to, point_name, type):
   url = "https://api.sendinblue.com/v3/smtp/email"
   to = []
   for receiver in send_to:
@@ -30,16 +31,28 @@ def send_mail(rule, send_to, point_name):
       }
     )
   sensed_value = eval(rule['metric'])
-  payload = {
-    "sender":{
-      "name":"no_reply_UNAL",
-      "email":"jcrubioa@unal.edu.co"
-    },
-    "to": to,
-    "textContent":"La variable \"{metric}\" ha salido del umbral establecido: \"{metric} {comparator} {value}\".\n Valor sensado: \"{sensed_value}\""\
-      .format(metric=rule['metric'], comparator=rule['comparator'], value=rule['value'], sensed_value=round(sensed_value, 2)),
-    "subject": "Alerta Preventiva: Valor sensado en el dispositivo \"{point_name}\" fuera de los umbrales establecidos".format(point_name=point_name)
-  }
+  if type == 'BAD':
+    payload = {
+      "sender":{
+        "name":"no_reply_UNAL",
+        "email":"jcrubioa@unal.edu.co"
+      },
+      "to": to,
+      "textContent":"La variable \"{metric}\" ha salido del umbral establecido. Alarma disparada: \"{metric} {comparator} {value}\".\n Valor sensado al lanzar alarma: \"{sensed_value}\""\
+        .format(metric=rule['metric'], comparator=rule['comparator'], value=rule['value'], sensed_value=round(sensed_value, 2)),
+      "subject": "Alerta Preventiva: Valor sensado en el dispositivo \"{point_name}\" fuera de los umbrales establecidos".format(point_name=point_name)
+    }
+  else:
+    payload = {
+      "sender":{
+        "name":"no_reply_UNAL",
+        "email":"jcrubioa@unal.edu.co"
+      },
+      "to": to,
+      "textContent":"La variable \"{metric}\" ha vuelto al umbral establecido. La alarma disparada fue: \"{metric} {comparator} {value}\".\n Valor sensado al desactivar alarma: \"{sensed_value}\""\
+        .format(metric=rule['metric'], comparator=rule['comparator'], value=rule['value'], sensed_value=round(sensed_value, 2)),
+      "subject": "Alerta Preventiva: Valor sensado en el dispositivo \"{point_name}\" ha vuelto a los umbrales establecidos".format(point_name=point_name)
+    }
   #"replyTo":{"email":"jcrubioa2@gmail.com"}
   headers = {
       'accept': "application/json",
@@ -47,12 +60,13 @@ def send_mail(rule, send_to, point_name):
       'api-key': "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"
       }
   print(payload)
-  response = requests.request("POST", url, data=json.dumps(payload), headers=headers)
-  print(response.text)
+  #response = requests.request("POST", url, data=json.dumps(payload), headers=headers)
+  #print(response.text)
 
 def check_rules(payload):
   print('check_rules')
   data = json.loads(payload)
+  if data['device_id'] not in states: states[data['device_id']] = {}
   for metric in data['metrics']:
     exec('{} = {}'.format(metric['name'], metric['value']), globals())
     print('{} = {}'.format(metric['name'], metric['value']))
@@ -62,10 +76,19 @@ def check_rules(payload):
     for rule in rules_config['rules'][device_id]['thresholds']:
       rule_expression = "{} {} {}".format(rule['metric'], rule['comparator'], rule['value'])
       triggered = eval(rule_expression)
+      state = states[device_id].get(rule_expression)
       if triggered:
-        send_to = rules_config['rules'][device_id]['emails']
-        point_name = rules_config['rules'][device_id]['point_name']
-        send_mail(rule, send_to, point_name)
+        if state == 'OK' or state is None:
+          send_to = rules_config['rules'][device_id]['emails']
+          point_name = rules_config['rules'][device_id]['point_name']
+          states[data['device_id']][rule_expression] = 'BAD'
+          send_mail(rule, send_to, point_name, 'BAD')
+      else:
+        if state == 'BAD':
+          send_to = rules_config['rules'][device_id]['emails']
+          point_name = rules_config['rules'][device_id]['point_name']
+          states[data['device_id']][rule_expression] = 'OK'
+          send_mail(rule, send_to, point_name, 'OK')
 
 
 
@@ -107,7 +130,7 @@ connection = mysql.connector.connect(host='35.196.177.135',
 cursor = connection.cursor()
 
 broker_address="broker"
-#broker_address="iot.eclipse.org"
+#broker_address="localhost"
 print("creating new instance")
 client = mqtt.Client("P1") #create new instance
 client.on_message=on_message #attach function to callback
