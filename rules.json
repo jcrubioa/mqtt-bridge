@@ -1,0 +1,14 @@
+{
+	"rules": {
+		"5": {
+			"thresholds": [
+				{"metric": "temperature", "comparator": ">", "value": 25}, 
+				{"metric": "temperature", "comparator": "<", "value": 10}, 
+				{"metric": "ph", "comparator": "<", "value": 6}, 
+				{"metric": "ph", "comparator": ">", "value": 8.5}
+			],
+			"emails": ["jcrubioa@unal.edu.co", "joaajimenezcav@unal.edu.co"],
+			"point_name": "Punto de Prueba"
+		}
+	}
+}
