@@ -16,6 +16,7 @@ def on_message(client, userdata, message):
   print("message topic=", message.topic)
   print("message qos=", message.qos)
   print("message retain flag=", message.retain)
+  print("Raw Payload: {}".format(payload))
   write_to_db(payload)
   check_rules(payload)
 
@@ -55,7 +56,7 @@ def check_rules(payload):
   for metric in data['metrics']:
     exec('{} = {}'.format(metric['name'], metric['value']), globals())
     print('{} = {}'.format(metric['name'], metric['value']))
-  with open('rules.json') as json_file:
+  with open('/conf/rules.json') as json_file:
     rules_config = json.load(json_file)
     device_id = data['device_id']
     for rule in rules_config['rules'][device_id]['thresholds']:
@@ -105,7 +106,7 @@ connection = mysql.connector.connect(host='35.196.177.135',
                                password='tpi2019')
 cursor = connection.cursor()
 
-broker_address="localhost"
+broker_address="broker"
 #broker_address="iot.eclipse.org"
 print("creating new instance")
 client = mqtt.Client("P1") #create new instance
