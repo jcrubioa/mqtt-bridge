@@ -56,7 +56,7 @@ def check_rules(payload):
   for metric in data['metrics']:
     exec('{} = {}'.format(metric['name'], metric['value']), globals())
     print('{} = {}'.format(metric['name'], metric['value']))
-  with open('rules.json') as json_file:
+  with open('/conf/rules.json') as json_file:
     rules_config = json.load(json_file)
     device_id = data['device_id']
     for rule in rules_config['rules'][device_id]['thresholds']:
