@@ -1,0 +1,2 @@
+docker network create mynet
+docker run --name broker --net mynet eclipse-mosquitto
